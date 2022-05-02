@@ -68,4 +68,18 @@ class CountryRepositoryTest {
         )))
     }
 
+    @Test
+    fun `getFilteredCountries with lower case search string must provide single item`() {
+        // given
+        val repository = CountryRepository(TestLocaleProvider())
+
+        // when
+        val countries: List<Country> = repository.getFilteredCountries("united k")
+
+        // then
+        assertThat(countries, matches(listOf(
+            Country("United Kingdom")
+        )))
+    }
+
 }
