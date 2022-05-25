@@ -1,17 +1,16 @@
 package com.atlassian.androidinterview
 
-import android.os.AsyncTask
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import android.widget.EditText
+import kotlinx.coroutines.*
 
 class CountrySearchActivity : AppCompatActivity() {
 
     private val repository = CountryRepository()
-
-    private var searchTask: MyAsyncTask? = null
+    private val searchJob = CoroutineScope(Job() + Dispatchers.IO)
     private val countryAdapter = CountryAdapter()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,21 +26,18 @@ class CountrySearchActivity : AppCompatActivity() {
 
         searchEditText.afterTextChanged { text ->
             // Should run this on other thread using coroutine or asynctask or thread
-            searchTask?.cancel(false)
-            searchTask = MyAsyncTask().apply {
-                execute(text)
+            searchJob.launch {
+                val result = repository.getFilteredCountries(text)
+                withContext(Dispatchers.Main) {
+                    countryAdapter.submitList(result)
+                }
             }
         }
     }
 
-    inner class MyAsyncTask : AsyncTask<String, Void, List<Country>>() {
-        override fun doInBackground(vararg params: String): List<Country> {
-            return repository.getFilteredCountries(params[0])
-        }
-
-        override fun onPostExecute(result: List<Country>?) {
-            countryAdapter.submitList(result)
-        }
+    override fun onDestroy() {
+        searchJob.cancel()
+        super.onDestroy()
     }
 }
 
